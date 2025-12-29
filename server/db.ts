@@ -1,4 +1,4 @@
-import { and, eq, desc, sql } from "drizzle-orm";
+import { and, eq, desc, asc, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   InsertUser,
@@ -60,6 +60,34 @@ import {
   InsertEventTrigger,
   agentHistories,
   InsertAgentHistory,
+  // DreamCog integration imports
+  agentBigFivePersonality,
+  InsertAgentBigFivePersonality,
+  AgentBigFivePersonality,
+  agentMotivations,
+  InsertAgentMotivation,
+  AgentMotivation,
+  agentMemories,
+  InsertAgentMemory,
+  AgentMemory,
+  relationshipEvents,
+  InsertRelationshipEvent,
+  RelationshipEvent,
+  worlds,
+  InsertWorld,
+  World,
+  locations,
+  InsertLocation,
+  Location,
+  loreEntries,
+  InsertLoreEntry,
+  LoreEntry,
+  worldEvents,
+  InsertWorldEvent,
+  WorldEvent,
+  scheduledWorldEvents,
+  InsertScheduledWorldEvent,
+  ScheduledWorldEvent,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1898,4 +1926,442 @@ export async function seedAgenticSimulationData(): Promise<void> {
   }
 
   console.log("[Database] Agentic simulation data seeded successfully");
+}
+
+// ============================================================================
+// DREAMCOG INTEGRATION - BIG FIVE PERSONALITY FUNCTIONS
+// ============================================================================
+
+export async function createAgentBigFivePersonality(
+  data: InsertAgentBigFivePersonality
+): Promise<AgentBigFivePersonality> {
+  const [personality] = await db
+    .insert(agentBigFivePersonality)
+    .values(data)
+    .$returningId();
+  
+  const created = await db
+    .select()
+    .from(agentBigFivePersonality)
+    .where(eq(agentBigFivePersonality.id, personality.id))
+    .limit(1);
+  
+  return created[0];
+}
+
+export async function getAgentBigFivePersonality(
+  agentId: number
+): Promise<AgentBigFivePersonality | null> {
+  const [personality] = await db
+    .select()
+    .from(agentBigFivePersonality)
+    .where(eq(agentBigFivePersonality.agentId, agentId))
+    .limit(1);
+  
+  return personality || null;
+}
+
+export async function updateAgentBigFivePersonality(
+  agentId: number,
+  data: Partial<InsertAgentBigFivePersonality>
+): Promise<void> {
+  await db
+    .update(agentBigFivePersonality)
+    .set(data)
+    .where(eq(agentBigFivePersonality.agentId, agentId));
+}
+
+// ============================================================================
+// DREAMCOG INTEGRATION - AGENT MOTIVATIONS FUNCTIONS
+// ============================================================================
+
+export async function createAgentMotivation(
+  data: InsertAgentMotivation
+): Promise<AgentMotivation> {
+  const [motivation] = await db
+    .insert(agentMotivations)
+    .values(data)
+    .$returningId();
+  
+  const created = await db
+    .select()
+    .from(agentMotivations)
+    .where(eq(agentMotivations.id, motivation.id))
+    .limit(1);
+  
+  return created[0];
+}
+
+export async function getAgentMotivations(
+  agentId: number,
+  activeOnly: boolean = false
+): Promise<AgentMotivation[]> {
+  const conditions = [eq(agentMotivations.agentId, agentId)];
+  if (activeOnly) {
+    conditions.push(eq(agentMotivations.isActive, true));
+  }
+  
+  return await db
+    .select()
+    .from(agentMotivations)
+    .where(and(...conditions))
+    .orderBy(desc(agentMotivations.priority));
+}
+
+export async function updateAgentMotivation(
+  id: number,
+  data: Partial<InsertAgentMotivation>
+): Promise<void> {
+  await db
+    .update(agentMotivations)
+    .set(data)
+    .where(eq(agentMotivations.id, id));
+}
+
+// ============================================================================
+// DREAMCOG INTEGRATION - AGENT MEMORIES FUNCTIONS
+// ============================================================================
+
+export async function createAgentMemory(
+  data: InsertAgentMemory
+): Promise<AgentMemory> {
+  const [memory] = await db
+    .insert(agentMemories)
+    .values(data)
+    .$returningId();
+  
+  const created = await db
+    .select()
+    .from(agentMemories)
+    .where(eq(agentMemories.id, memory.id))
+    .limit(1);
+  
+  return created[0];
+}
+
+export async function getAgentMemories(
+  agentId: number,
+  limit: number = 50
+): Promise<AgentMemory[]> {
+  return await db
+    .select()
+    .from(agentMemories)
+    .where(
+      and(
+        eq(agentMemories.agentId, agentId),
+        eq(agentMemories.isRepressed, false)
+      )
+    )
+    .orderBy(desc(agentMemories.importance), desc(agentMemories.memoryDate))
+    .limit(limit);
+}
+
+export async function updateAgentMemory(
+  id: number,
+  data: Partial<InsertAgentMemory>
+): Promise<void> {
+  await db
+    .update(agentMemories)
+    .set(data)
+    .where(eq(agentMemories.id, id));
+}
+
+// ============================================================================
+// DREAMCOG INTEGRATION - RELATIONSHIP EVENTS FUNCTIONS
+// ============================================================================
+
+export async function createRelationshipEvent(
+  data: InsertRelationshipEvent
+): Promise<RelationshipEvent> {
+  const [event] = await db
+    .insert(relationshipEvents)
+    .values(data)
+    .$returningId();
+  
+  const created = await db
+    .select()
+    .from(relationshipEvents)
+    .where(eq(relationshipEvents.id, event.id))
+    .limit(1);
+  
+  return created[0];
+}
+
+export async function getRelationshipEvents(
+  relationshipId: number
+): Promise<RelationshipEvent[]> {
+  return await db
+    .select()
+    .from(relationshipEvents)
+    .where(eq(relationshipEvents.relationshipId, relationshipId))
+    .orderBy(desc(relationshipEvents.eventDate));
+}
+
+// ============================================================================
+// DREAMCOG INTEGRATION - WORLDS FUNCTIONS
+// ============================================================================
+
+export async function createWorld(
+  data: InsertWorld
+): Promise<World> {
+  const [world] = await db
+    .insert(worlds)
+    .values(data)
+    .$returningId();
+  
+  const created = await db
+    .select()
+    .from(worlds)
+    .where(eq(worlds.id, world.id))
+    .limit(1);
+  
+  return created[0];
+}
+
+export async function getWorldById(id: number): Promise<World | null> {
+  const [world] = await db
+    .select()
+    .from(worlds)
+    .where(eq(worlds.id, id))
+    .limit(1);
+  
+  return world || null;
+}
+
+export async function getWorldsByUserId(userId: number): Promise<World[]> {
+  return await db
+    .select()
+    .from(worlds)
+    .where(eq(worlds.userId, userId))
+    .orderBy(desc(worlds.createdAt));
+}
+
+export async function updateWorld(
+  id: number,
+  data: Partial<InsertWorld>
+): Promise<void> {
+  await db
+    .update(worlds)
+    .set(data)
+    .where(eq(worlds.id, id));
+}
+
+// ============================================================================
+// DREAMCOG INTEGRATION - LOCATIONS FUNCTIONS
+// ============================================================================
+
+export async function createLocation(
+  data: InsertLocation
+): Promise<Location> {
+  const [location] = await db
+    .insert(locations)
+    .values(data)
+    .$returningId();
+  
+  const created = await db
+    .select()
+    .from(locations)
+    .where(eq(locations.id, location.id))
+    .limit(1);
+  
+  return created[0];
+}
+
+export async function getLocationById(id: number): Promise<Location | null> {
+  const [location] = await db
+    .select()
+    .from(locations)
+    .where(eq(locations.id, id))
+    .limit(1);
+  
+  return location || null;
+}
+
+export async function getLocationsByWorldId(worldId: number): Promise<Location[]> {
+  return await db
+    .select()
+    .from(locations)
+    .where(eq(locations.worldId, worldId))
+    .orderBy(desc(locations.createdAt));
+}
+
+export async function getSubLocations(parentLocationId: number): Promise<Location[]> {
+  return await db
+    .select()
+    .from(locations)
+    .where(eq(locations.parentLocationId, parentLocationId));
+}
+
+export async function updateLocation(
+  id: number,
+  data: Partial<InsertLocation>
+): Promise<void> {
+  await db
+    .update(locations)
+    .set(data)
+    .where(eq(locations.id, id));
+}
+
+// ============================================================================
+// DREAMCOG INTEGRATION - LORE ENTRIES FUNCTIONS
+// ============================================================================
+
+export async function createLoreEntry(
+  data: InsertLoreEntry
+): Promise<LoreEntry> {
+  const [lore] = await db
+    .insert(loreEntries)
+    .values(data)
+    .$returningId();
+  
+  const created = await db
+    .select()
+    .from(loreEntries)
+    .where(eq(loreEntries.id, lore.id))
+    .limit(1);
+  
+  return created[0];
+}
+
+export async function getLoreEntryById(id: number): Promise<LoreEntry | null> {
+  const [lore] = await db
+    .select()
+    .from(loreEntries)
+    .where(eq(loreEntries.id, id))
+    .limit(1);
+  
+  return lore || null;
+}
+
+export async function getLoreEntriesByWorldId(
+  worldId: number,
+  category?: string
+): Promise<LoreEntry[]> {
+  const conditions = [eq(loreEntries.worldId, worldId)];
+  if (category) {
+    conditions.push(eq(loreEntries.category, category as any));
+  }
+  
+  return await db
+    .select()
+    .from(loreEntries)
+    .where(and(...conditions))
+    .orderBy(desc(loreEntries.createdAt));
+}
+
+export async function updateLoreEntry(
+  id: number,
+  data: Partial<InsertLoreEntry>
+): Promise<void> {
+  await db
+    .update(loreEntries)
+    .set(data)
+    .where(eq(loreEntries.id, id));
+}
+
+// ============================================================================
+// DREAMCOG INTEGRATION - WORLD EVENTS FUNCTIONS
+// ============================================================================
+
+export async function createWorldEvent(
+  data: InsertWorldEvent
+): Promise<WorldEvent> {
+  const [event] = await db
+    .insert(worldEvents)
+    .values(data)
+    .$returningId();
+  
+  const created = await db
+    .select()
+    .from(worldEvents)
+    .where(eq(worldEvents.id, event.id))
+    .limit(1);
+  
+  return created[0];
+}
+
+export async function getWorldEventById(id: number): Promise<WorldEvent | null> {
+  const [event] = await db
+    .select()
+    .from(worldEvents)
+    .where(eq(worldEvents.id, id))
+    .limit(1);
+  
+  return event || null;
+}
+
+export async function getWorldEventsByWorldId(worldId: number): Promise<WorldEvent[]> {
+  return await db
+    .select()
+    .from(worldEvents)
+    .where(eq(worldEvents.worldId, worldId))
+    .orderBy(desc(worldEvents.importance), desc(worldEvents.eventDate));
+}
+
+export async function updateWorldEvent(
+  id: number,
+  data: Partial<InsertWorldEvent>
+): Promise<void> {
+  await db
+    .update(worldEvents)
+    .set(data)
+    .where(eq(worldEvents.id, id));
+}
+
+// ============================================================================
+// DREAMCOG INTEGRATION - SCHEDULED WORLD EVENTS FUNCTIONS
+// ============================================================================
+
+export async function createScheduledWorldEvent(
+  data: InsertScheduledWorldEvent
+): Promise<ScheduledWorldEvent> {
+  const [event] = await db
+    .insert(scheduledWorldEvents)
+    .values(data)
+    .$returningId();
+  
+  const created = await db
+    .select()
+    .from(scheduledWorldEvents)
+    .where(eq(scheduledWorldEvents.id, event.id))
+    .limit(1);
+  
+  return created[0];
+}
+
+export async function getScheduledWorldEventById(
+  id: number
+): Promise<ScheduledWorldEvent | null> {
+  const [event] = await db
+    .select()
+    .from(scheduledWorldEvents)
+    .where(eq(scheduledWorldEvents.id, id))
+    .limit(1);
+  
+  return event || null;
+}
+
+export async function getPendingScheduledWorldEvents(
+  worldId: number
+): Promise<ScheduledWorldEvent[]> {
+  return await db
+    .select()
+    .from(scheduledWorldEvents)
+    .where(
+      and(
+        eq(scheduledWorldEvents.worldId, worldId),
+        eq(scheduledWorldEvents.status, "pending")
+      )
+    )
+    .orderBy(asc(scheduledWorldEvents.scheduledFor), desc(scheduledWorldEvents.priority));
+}
+
+export async function updateScheduledWorldEvent(
+  id: number,
+  data: Partial<InsertScheduledWorldEvent>
+): Promise<void> {
+  await db
+    .update(scheduledWorldEvents)
+    .set(data)
+    .where(eq(scheduledWorldEvents.id, id));
 }
