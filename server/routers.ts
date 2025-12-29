@@ -80,6 +80,39 @@ import {
   processAgentEvent,
   getActiveEventTriggers,
   getAgentHistory,
+  // DreamCog integration functions
+  createAgentBigFivePersonality,
+  getAgentBigFivePersonality,
+  updateAgentBigFivePersonality,
+  createAgentMotivation,
+  getAgentMotivations,
+  updateAgentMotivation,
+  createAgentMemory,
+  getAgentMemories,
+  updateAgentMemory,
+  createRelationshipEvent,
+  getRelationshipEvents,
+  createWorld,
+  getWorldById,
+  getWorldsByUserId,
+  updateWorld,
+  createLocation,
+  getLocationById,
+  getLocationsByWorldId,
+  getSubLocations,
+  updateLocation,
+  createLoreEntry,
+  getLoreEntryById,
+  getLoreEntriesByWorldId,
+  updateLoreEntry,
+  createWorldEvent,
+  getWorldEventById,
+  getWorldEventsByWorldId,
+  updateWorldEvent,
+  createScheduledWorldEvent,
+  getScheduledWorldEventById,
+  getPendingScheduledWorldEvents,
+  updateScheduledWorldEvent,
 } from "./db";
 
 // Initialize game data on server start
@@ -987,6 +1020,497 @@ export const appRouter = router({
       .input(z.object({ eventId: z.number() }))
       .mutation(async ({ input }) => {
         await processAgentEvent(input.eventId);
+        return { success: true };
+      }),
+  }),
+
+  // ============================================================================
+  // DREAMCOG INTEGRATION ROUTES
+  // ============================================================================
+
+  // Big Five Personality
+  personality: router({
+    // Get or create personality profile for agent
+    get: protectedProcedure
+      .input(z.object({ agentId: z.number() }))
+      .query(async ({ input }) => {
+        return await getAgentBigFivePersonality(input.agentId);
+      }),
+
+    // Create personality profile
+    create: protectedProcedure
+      .input(
+        z.object({
+          agentId: z.number(),
+          openness: z.number().min(0).max(100).optional(),
+          conscientiousness: z.number().min(0).max(100).optional(),
+          extraversion: z.number().min(0).max(100).optional(),
+          agreeableness: z.number().min(0).max(100).optional(),
+          neuroticism: z.number().min(0).max(100).optional(),
+          formalityLevel: z.number().min(0).max(100).optional(),
+          verbosityLevel: z.number().min(0).max(100).optional(),
+          emotionalExpression: z.number().min(0).max(100).optional(),
+          humorLevel: z.number().min(0).max(100).optional(),
+          directnessLevel: z.number().min(0).max(100).optional(),
+          impulsiveness: z.number().min(0).max(100).optional(),
+          riskTaking: z.number().min(0).max(100).optional(),
+          empathy: z.number().min(0).max(100).optional(),
+          leadership: z.number().min(0).max(100).optional(),
+          independence: z.number().min(0).max(100).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await createAgentBigFivePersonality(input);
+      }),
+
+    // Update personality profile
+    update: protectedProcedure
+      .input(
+        z.object({
+          agentId: z.number(),
+          updates: z.object({
+            openness: z.number().min(0).max(100).optional(),
+            conscientiousness: z.number().min(0).max(100).optional(),
+            extraversion: z.number().min(0).max(100).optional(),
+            agreeableness: z.number().min(0).max(100).optional(),
+            neuroticism: z.number().min(0).max(100).optional(),
+            formalityLevel: z.number().min(0).max(100).optional(),
+            verbosityLevel: z.number().min(0).max(100).optional(),
+            emotionalExpression: z.number().min(0).max(100).optional(),
+            humorLevel: z.number().min(0).max(100).optional(),
+            directnessLevel: z.number().min(0).max(100).optional(),
+            impulsiveness: z.number().min(0).max(100).optional(),
+            riskTaking: z.number().min(0).max(100).optional(),
+            empathy: z.number().min(0).max(100).optional(),
+            leadership: z.number().min(0).max(100).optional(),
+            independence: z.number().min(0).max(100).optional(),
+          }),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await updateAgentBigFivePersonality(input.agentId, input.updates);
+        return { success: true };
+      }),
+  }),
+
+  // Agent Motivations
+  motivation: router({
+    // Create motivation
+    create: protectedProcedure
+      .input(
+        z.object({
+          agentId: z.number(),
+          motivationType: z.enum(["short_term", "long_term", "core_value"]),
+          description: z.string(),
+          priority: z.number().min(1).max(10).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await createAgentMotivation(input);
+      }),
+
+    // Get agent motivations
+    byAgent: protectedProcedure
+      .input(
+        z.object({
+          agentId: z.number(),
+          activeOnly: z.boolean().optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        return await getAgentMotivations(input.agentId, input.activeOnly);
+      }),
+
+    // Update motivation
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          updates: z.object({
+            description: z.string().optional(),
+            priority: z.number().min(1).max(10).optional(),
+            progress: z.number().min(0).max(100).optional(),
+            isActive: z.boolean().optional(),
+          }),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await updateAgentMotivation(input.id, input.updates);
+        return { success: true };
+      }),
+  }),
+
+  // Agent Memories
+  memory: router({
+    // Create memory
+    create: protectedProcedure
+      .input(
+        z.object({
+          agentId: z.number(),
+          memoryType: z.enum([
+            "event",
+            "interaction",
+            "knowledge",
+            "emotion",
+            "skill",
+            "trauma",
+            "achievement",
+          ]),
+          content: z.string(),
+          emotionalImpact: z.number().min(-100).max(100).optional(),
+          importance: z.number().min(1).max(10).optional(),
+          memoryDate: z.date(),
+          eventId: z.number().optional(),
+          relatedAgentId: z.number().optional(),
+          locationId: z.number().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await createAgentMemory(input);
+      }),
+
+    // Get agent memories
+    byAgent: protectedProcedure
+      .input(
+        z.object({
+          agentId: z.number(),
+          limit: z.number().optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        return await getAgentMemories(input.agentId, input.limit);
+      }),
+  }),
+
+  // Relationship Events
+  relationshipEvent: router({
+    // Create relationship event
+    create: protectedProcedure
+      .input(
+        z.object({
+          relationshipId: z.number(),
+          eventType: z.enum([
+            "first_meeting",
+            "conflict",
+            "bonding",
+            "betrayal",
+            "reconciliation",
+            "milestone",
+            "other",
+          ]),
+          description: z.string(),
+          impactOnTrust: z.number().min(-100).max(100).optional(),
+          impactOnAffection: z.number().min(-100).max(100).optional(),
+          impactOnRespect: z.number().min(-100).max(100).optional(),
+          eventDate: z.date(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await createRelationshipEvent(input);
+      }),
+
+    // Get relationship events
+    byRelationship: protectedProcedure
+      .input(z.object({ relationshipId: z.number() }))
+      .query(async ({ input }) => {
+        return await getRelationshipEvents(input.relationshipId);
+      }),
+  }),
+
+  // Worlds
+  world: router({
+    // Create world
+    create: protectedProcedure
+      .input(
+        z.object({
+          name: z.string().min(2).max(128),
+          description: z.string().optional(),
+          genre: z.string().optional(),
+          timePeriod: z.string().optional(),
+          technologyLevel: z.string().optional(),
+          magicSystem: z.string().optional(),
+          culturalNotes: z.string().optional(),
+          rules: z
+            .object({
+              physicsRules: z.array(z.string()).optional(),
+              socialRules: z.array(z.string()).optional(),
+              magicRules: z.array(z.string()).optional(),
+            })
+            .optional(),
+          isPublic: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        return await createWorld({
+          ...input,
+          userId: ctx.user.id,
+        });
+      }),
+
+    // Get world by ID
+    byId: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getWorldById(input.id);
+      }),
+
+    // Get user's worlds
+    list: protectedProcedure.query(async ({ ctx }) => {
+      return await getWorldsByUserId(ctx.user.id);
+    }),
+
+    // Update world
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          updates: z.object({
+            name: z.string().optional(),
+            description: z.string().optional(),
+            genre: z.string().optional(),
+            timePeriod: z.string().optional(),
+            technologyLevel: z.string().optional(),
+            magicSystem: z.string().optional(),
+            culturalNotes: z.string().optional(),
+            rules: z
+              .object({
+                physicsRules: z.array(z.string()).optional(),
+                socialRules: z.array(z.string()).optional(),
+                magicRules: z.array(z.string()).optional(),
+              })
+              .optional(),
+            isPublic: z.boolean().optional(),
+          }),
+        })
+      )
+      .mutation(async ({ ctx, input }) => {
+        const world = await getWorldById(input.id);
+        if (!world || world.userId !== ctx.user.id) {
+          throw new Error("Not authorized");
+        }
+        await updateWorld(input.id, input.updates);
+        return { success: true };
+      }),
+  }),
+
+  // Locations
+  location: router({
+    // Create location
+    create: protectedProcedure
+      .input(
+        z.object({
+          worldId: z.number(),
+          name: z.string().min(2).max(128),
+          locationType: z.enum([
+            "city",
+            "building",
+            "wilderness",
+            "dungeon",
+            "realm",
+            "dimension",
+            "other",
+          ]),
+          description: z.string().optional(),
+          parentLocationId: z.number().optional(),
+          attributes: z
+            .object({
+              climate: z.string().optional(),
+              population: z.string().optional(),
+              dangerLevel: z.number().optional(),
+              resources: z.array(z.string()).optional(),
+              notableFeatures: z.array(z.string()).optional(),
+            })
+            .optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await createLocation(input);
+      }),
+
+    // Get location by ID
+    byId: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getLocationById(input.id);
+      }),
+
+    // Get locations by world
+    byWorld: protectedProcedure
+      .input(z.object({ worldId: z.number() }))
+      .query(async ({ input }) => {
+        return await getLocationsByWorldId(input.worldId);
+      }),
+
+    // Get sub-locations
+    subLocations: protectedProcedure
+      .input(z.object({ parentLocationId: z.number() }))
+      .query(async ({ input }) => {
+        return await getSubLocations(input.parentLocationId);
+      }),
+  }),
+
+  // Lore Entries
+  lore: router({
+    // Create lore entry
+    create: protectedProcedure
+      .input(
+        z.object({
+          worldId: z.number(),
+          category: z.enum([
+            "history",
+            "legend",
+            "culture",
+            "religion",
+            "politics",
+            "science",
+            "magic",
+            "species",
+            "language",
+            "artifact",
+            "other",
+          ]),
+          title: z.string().min(2).max(256),
+          content: z.string(),
+          isPublic: z.boolean().optional(),
+          isSecret: z.boolean().optional(),
+          relatedLocationId: z.number().optional(),
+          relatedAgentId: z.number().optional(),
+          tags: z.array(z.string()).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await createLoreEntry(input);
+      }),
+
+    // Get lore entry by ID
+    byId: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getLoreEntryById(input.id);
+      }),
+
+    // Get lore entries by world
+    byWorld: protectedProcedure
+      .input(
+        z.object({
+          worldId: z.number(),
+          category: z.string().optional(),
+        })
+      )
+      .query(async ({ input }) => {
+        return await getLoreEntriesByWorldId(input.worldId, input.category);
+      }),
+  }),
+
+  // World Events
+  worldEvent: router({
+    // Create world event
+    create: protectedProcedure
+      .input(
+        z.object({
+          worldId: z.number(),
+          title: z.string().min(2).max(256),
+          description: z.string().optional(),
+          eventType: z.enum([
+            "battle",
+            "discovery",
+            "political",
+            "natural",
+            "magical",
+            "social",
+            "economic",
+            "other",
+          ]),
+          importance: z.number().min(1).max(10).optional(),
+          eventDate: z.string(),
+          duration: z.string().optional(),
+          locationId: z.number().optional(),
+          involvedAgentIds: z.array(z.number()).optional(),
+          involvedGroupIds: z.array(z.number()).optional(),
+          consequences: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await createWorldEvent(input);
+      }),
+
+    // Get world event by ID
+    byId: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getWorldEventById(input.id);
+      }),
+
+    // Get world events by world
+    byWorld: protectedProcedure
+      .input(z.object({ worldId: z.number() }))
+      .query(async ({ input }) => {
+        return await getWorldEventsByWorldId(input.worldId);
+      }),
+  }),
+
+  // Scheduled World Events
+  scheduledWorldEvent: router({
+    // Create scheduled world event
+    create: protectedProcedure
+      .input(
+        z.object({
+          worldId: z.number(),
+          eventName: z.string().min(2).max(256),
+          description: z.string().optional(),
+          scheduledFor: z.date(),
+          eventTrigger: z
+            .object({
+              triggerType: z.enum(["time", "condition", "manual"]),
+              conditions: z
+                .array(
+                  z.object({
+                    type: z.string(),
+                    metric: z.string(),
+                    operator: z.string(),
+                    value: z.union([z.number(), z.string()]),
+                  })
+                )
+                .optional(),
+            })
+            .optional(),
+          targetAgentIds: z.array(z.number()).optional(),
+          targetLocationId: z.number().optional(),
+          priority: z.number().min(1).max(10).optional(),
+          isRecurring: z.boolean().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        return await createScheduledWorldEvent(input);
+      }),
+
+    // Get scheduled world event by ID
+    byId: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getScheduledWorldEventById(input.id);
+      }),
+
+    // Get pending scheduled events
+    pending: protectedProcedure
+      .input(z.object({ worldId: z.number() }))
+      .query(async ({ input }) => {
+        return await getPendingScheduledWorldEvents(input.worldId);
+      }),
+
+    // Update scheduled event
+    update: protectedProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          updates: z.object({
+            status: z.enum(["pending", "active", "completed", "cancelled"]).optional(),
+            scheduledFor: z.date().optional(),
+          }),
+        })
+      )
+      .mutation(async ({ input }) => {
+        await updateScheduledWorldEvent(input.id, input.updates);
         return { success: true };
       }),
   }),
