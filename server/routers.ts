@@ -931,7 +931,15 @@ export const appRouter = router({
           description: z.string().optional(),
           scheduledAt: z.date(),
           duration: z.number().optional(),
-          emotionalImpact: z.record(z.number()).optional(),
+          emotionalImpact: z
+            .object({
+              happiness: z.number().optional(),
+              satisfaction: z.number().optional(),
+              stress: z.number().optional(),
+              loyalty: z.number().optional(),
+              trust: z.number().optional(),
+            })
+            .optional(),
           relationshipImpact: z
             .object({
               agentIds: z.array(z.number()),
