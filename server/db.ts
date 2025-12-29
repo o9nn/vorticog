@@ -28,6 +28,38 @@ import {
   companyTechnologies,
   productionRecipes,
   productionQueue,
+  // Agentic simulation imports
+  characterPersonas,
+  InsertCharacterPersona,
+  CharacterPersona,
+  characterTraits,
+  InsertCharacterTrait,
+  CharacterTrait,
+  agents,
+  InsertAgent,
+  Agent,
+  agentTraits,
+  InsertAgentTrait,
+  relationships,
+  InsertRelationship,
+  Relationship,
+  agentGroups,
+  InsertAgentGroup,
+  AgentGroup,
+  groupMemberships,
+  InsertGroupMembership,
+  communities,
+  InsertCommunity,
+  Community,
+  communityMemberships,
+  InsertCommunityMembership,
+  agentEvents,
+  InsertAgentEvent,
+  AgentEvent,
+  eventTriggers,
+  InsertEventTrigger,
+  agentHistories,
+  InsertAgentHistory,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -572,6 +604,7 @@ export async function incrementGameTurn(): Promise<void> {
 export async function initializeGameData(): Promise<void> {
   await seedCities();
   await seedResourceTypes();
+  await seedAgenticSimulationData(); // Add agentic simulation seed data
   await getGameState(); // Ensures game state exists
 }
 
@@ -1006,4 +1039,863 @@ export async function seedProductionRecipes(): Promise<void> {
       });
     }
   }
+}
+
+// ============================================================================
+// AGENTIC SIMULATION OPERATIONS
+// ============================================================================
+
+// ============================================================================
+// CHARACTER PERSONAS
+// ============================================================================
+export async function createCharacterPersona(
+  persona: InsertCharacterPersona
+): Promise<CharacterPersona | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.insert(characterPersonas).values(persona);
+  return await getCharacterPersonaById(Number(result[0].insertId));
+}
+
+export async function getCharacterPersonaById(id: number): Promise<CharacterPersona | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(characterPersonas)
+    .where(eq(characterPersonas.id, id))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getCharacterPersonaByCode(code: string): Promise<CharacterPersona | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(characterPersonas)
+    .where(eq(characterPersonas.code, code))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getAllCharacterPersonas(): Promise<CharacterPersona[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(characterPersonas);
+}
+
+// ============================================================================
+// CHARACTER TRAITS
+// ============================================================================
+export async function createCharacterTrait(
+  trait: InsertCharacterTrait
+): Promise<CharacterTrait | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.insert(characterTraits).values(trait);
+  return await getCharacterTraitById(Number(result[0].insertId));
+}
+
+export async function getCharacterTraitById(id: number): Promise<CharacterTrait | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(characterTraits)
+    .where(eq(characterTraits.id, id))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getAllCharacterTraits(): Promise<CharacterTrait[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(characterTraits);
+}
+
+export async function getCharacterTraitsByCategory(
+  category: "professional" | "social" | "cognitive" | "emotional"
+): Promise<CharacterTrait[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(characterTraits)
+    .where(eq(characterTraits.category, category));
+}
+
+// ============================================================================
+// AGENTS
+// ============================================================================
+export async function createAgent(agent: InsertAgent): Promise<Agent | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.insert(agents).values(agent);
+  return await getAgentById(Number(result[0].insertId));
+}
+
+export async function getAgentById(id: number): Promise<Agent | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(agents)
+    .where(eq(agents.id, id))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getAgentsByType(
+  type: "customer" | "supplier" | "employee" | "partner" | "investor" | "competitor"
+): Promise<Agent[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(agents).where(eq(agents.type, type));
+}
+
+export async function getAgentsByCompany(companyId: number): Promise<Agent[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(agents).where(eq(agents.companyId, companyId));
+}
+
+export async function getAgentsByBusinessUnit(businessUnitId: number): Promise<Agent[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(agents)
+    .where(eq(agents.businessUnitId, businessUnitId));
+}
+
+export async function getAgentsByCity(cityId: number): Promise<Agent[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(agents).where(eq(agents.cityId, cityId));
+}
+
+export async function updateAgent(
+  id: number,
+  updates: Partial<InsertAgent>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(agents).set(updates).where(eq(agents.id, id));
+}
+
+export async function updateAgentEmotionalState(
+  id: number,
+  emotions: {
+    happiness?: number;
+    satisfaction?: number;
+    stress?: number;
+    loyalty?: number;
+    trust?: number;
+  }
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(agents).set(emotions).where(eq(agents.id, id));
+}
+
+// ============================================================================
+// AGENT TRAITS
+// ============================================================================
+export async function addTraitToAgent(
+  agentId: number,
+  traitId: number,
+  intensity: number = 50
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(agentTraits).values({
+    agentId,
+    traitId,
+    intensity,
+  });
+}
+
+export async function getAgentTraits(agentId: number): Promise<
+  Array<{
+    agentTrait: typeof agentTraits.$inferSelect;
+    trait: CharacterTrait;
+  }>
+> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select()
+    .from(agentTraits)
+    .leftJoin(characterTraits, eq(agentTraits.traitId, characterTraits.id))
+    .where(eq(agentTraits.agentId, agentId));
+
+  return result.map((r) => ({
+    agentTrait: r.agent_traits,
+    trait: r.character_traits!,
+  }));
+}
+
+export async function removeTraitFromAgent(
+  agentId: number,
+  traitId: number
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .delete(agentTraits)
+    .where(and(eq(agentTraits.agentId, agentId), eq(agentTraits.traitId, traitId)));
+}
+
+// ============================================================================
+// RELATIONSHIPS
+// ============================================================================
+export async function createRelationship(
+  relationship: InsertRelationship
+): Promise<Relationship | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  // Ensure agent1Id < agent2Id for consistency
+  const agent1Id = Math.min(relationship.agent1Id, relationship.agent2Id);
+  const agent2Id = Math.max(relationship.agent1Id, relationship.agent2Id);
+
+  const result = await db.insert(relationships).values({
+    ...relationship,
+    agent1Id,
+    agent2Id,
+  });
+  return await getRelationshipById(Number(result[0].insertId));
+}
+
+export async function getRelationshipById(id: number): Promise<Relationship | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(relationships)
+    .where(eq(relationships.id, id))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getRelationshipBetweenAgents(
+  agent1Id: number,
+  agent2Id: number
+): Promise<Relationship | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const minId = Math.min(agent1Id, agent2Id);
+  const maxId = Math.max(agent1Id, agent2Id);
+
+  const result = await db
+    .select()
+    .from(relationships)
+    .where(
+      and(
+        eq(relationships.agent1Id, minId),
+        eq(relationships.agent2Id, maxId)
+      )
+    )
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getAgentRelationships(agentId: number): Promise<Relationship[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(relationships)
+    .where(
+      sql`${relationships.agent1Id} = ${agentId} OR ${relationships.agent2Id} = ${agentId}`
+    );
+}
+
+export async function updateRelationship(
+  id: number,
+  updates: Partial<InsertRelationship>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(relationships).set(updates).where(eq(relationships.id, id));
+}
+
+export async function recordRelationshipInteraction(
+  agent1Id: number,
+  agent2Id: number,
+  strengthChange: number = 0,
+  positivityChange: number = 0
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const relationship = await getRelationshipBetweenAgents(agent1Id, agent2Id);
+  
+  if (relationship) {
+    const newStrength = Math.max(0, Math.min(100, relationship.strength + strengthChange));
+    const newPositivity = Math.max(0, Math.min(100, relationship.positivity + positivityChange));
+    
+    await updateRelationship(relationship.id, {
+      strength: newStrength,
+      positivity: newPositivity,
+      interactionCount: relationship.interactionCount + 1,
+      lastInteraction: new Date(),
+      frequency: Math.min(100, relationship.frequency + 1),
+    });
+  }
+}
+
+// ============================================================================
+// AGENT GROUPS
+// ============================================================================
+export async function createAgentGroup(group: InsertAgentGroup): Promise<AgentGroup | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.insert(agentGroups).values(group);
+  return await getAgentGroupById(Number(result[0].insertId));
+}
+
+export async function getAgentGroupById(id: number): Promise<AgentGroup | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(agentGroups)
+    .where(eq(agentGroups.id, id))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getAgentGroupsByCompany(companyId: number): Promise<AgentGroup[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(agentGroups)
+    .where(eq(agentGroups.companyId, companyId));
+}
+
+export async function getAgentGroupsByCity(cityId: number): Promise<AgentGroup[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(agentGroups).where(eq(agentGroups.cityId, cityId));
+}
+
+export async function updateAgentGroup(
+  id: number,
+  updates: Partial<InsertAgentGroup>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(agentGroups).set(updates).where(eq(agentGroups.id, id));
+}
+
+// ============================================================================
+// GROUP MEMBERSHIPS
+// ============================================================================
+export async function addAgentToGroup(
+  membership: InsertGroupMembership
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(groupMemberships).values(membership);
+}
+
+export async function getGroupMembers(groupId: number): Promise<
+  Array<{
+    membership: typeof groupMemberships.$inferSelect;
+    agent: Agent;
+  }>
+> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select()
+    .from(groupMemberships)
+    .leftJoin(agents, eq(groupMemberships.agentId, agents.id))
+    .where(eq(groupMemberships.groupId, groupId));
+
+  return result.map((r) => ({
+    membership: r.group_memberships,
+    agent: r.agents!,
+  }));
+}
+
+export async function getAgentGroups(agentId: number): Promise<
+  Array<{
+    membership: typeof groupMemberships.$inferSelect;
+    group: AgentGroup;
+  }>
+> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select()
+    .from(groupMemberships)
+    .leftJoin(agentGroups, eq(groupMemberships.groupId, agentGroups.id))
+    .where(eq(groupMemberships.agentId, agentId));
+
+  return result.map((r) => ({
+    membership: r.group_memberships,
+    group: r.agent_groups!,
+  }));
+}
+
+export async function removeAgentFromGroup(
+  groupId: number,
+  agentId: number
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db
+    .update(groupMemberships)
+    .set({ leftAt: new Date() })
+    .where(
+      and(
+        eq(groupMemberships.groupId, groupId),
+        eq(groupMemberships.agentId, agentId)
+      )
+    );
+}
+
+// ============================================================================
+// COMMUNITIES
+// ============================================================================
+export async function createCommunity(
+  community: InsertCommunity
+): Promise<Community | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.insert(communities).values(community);
+  return await getCommunityById(Number(result[0].insertId));
+}
+
+export async function getCommunityById(id: number): Promise<Community | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(communities)
+    .where(eq(communities.id, id))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getCommunitiesByCity(cityId: number): Promise<Community[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db.select().from(communities).where(eq(communities.cityId, cityId));
+}
+
+export async function updateCommunity(
+  id: number,
+  updates: Partial<InsertCommunity>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(communities).set(updates).where(eq(communities.id, id));
+}
+
+// ============================================================================
+// COMMUNITY MEMBERSHIPS
+// ============================================================================
+export async function addAgentToCommunity(
+  membership: InsertCommunityMembership
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(communityMemberships).values(membership);
+}
+
+export async function getCommunityMembers(communityId: number): Promise<
+  Array<{
+    membership: typeof communityMemberships.$inferSelect;
+    agent: Agent;
+  }>
+> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select()
+    .from(communityMemberships)
+    .leftJoin(agents, eq(communityMemberships.agentId, agents.id))
+    .where(eq(communityMemberships.communityId, communityId));
+
+  return result.map((r) => ({
+    membership: r.community_memberships,
+    agent: r.agents!,
+  }));
+}
+
+export async function getAgentCommunities(agentId: number): Promise<
+  Array<{
+    membership: typeof communityMemberships.$inferSelect;
+    community: Community;
+  }>
+> {
+  const db = await getDb();
+  if (!db) return [];
+
+  const result = await db
+    .select()
+    .from(communityMemberships)
+    .leftJoin(communities, eq(communityMemberships.communityId, communities.id))
+    .where(eq(communityMemberships.agentId, agentId));
+
+  return result.map((r) => ({
+    membership: r.community_memberships,
+    community: r.communities!,
+  }));
+}
+
+// ============================================================================
+// AGENT EVENTS
+// ============================================================================
+export async function createAgentEvent(
+  event: InsertAgentEvent
+): Promise<AgentEvent | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.insert(agentEvents).values(event);
+  return await getAgentEventById(Number(result[0].insertId));
+}
+
+export async function getAgentEventById(id: number): Promise<AgentEvent | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(agentEvents)
+    .where(eq(agentEvents.id, id))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getAgentEvents(agentId: number): Promise<AgentEvent[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(agentEvents)
+    .where(
+      sql`${agentEvents.initiatorAgentId} = ${agentId} OR ${agentEvents.targetAgentId} = ${agentId}`
+    )
+    .orderBy(desc(agentEvents.scheduledAt));
+}
+
+export async function getScheduledEvents(): Promise<AgentEvent[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(agentEvents)
+    .where(eq(agentEvents.status, "scheduled"))
+    .orderBy(agentEvents.scheduledAt);
+}
+
+export async function updateAgentEvent(
+  id: number,
+  updates: Partial<InsertAgentEvent>
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.update(agentEvents).set(updates).where(eq(agentEvents.id, id));
+}
+
+export async function processAgentEvent(eventId: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  const event = await getAgentEventById(eventId);
+  if (!event) return;
+
+  // Update event status
+  await updateAgentEvent(eventId, {
+    status: "completed",
+    occurredAt: new Date(),
+  });
+
+  // Apply emotional impacts to initiator
+  if (event.emotionalImpact) {
+    const initiator = await getAgentById(event.initiatorAgentId);
+    if (initiator) {
+      const emotionUpdates: Record<string, number> = {};
+      
+      Object.entries(event.emotionalImpact).forEach(([key, value]) => {
+        if (value !== undefined) {
+          const currentValue = initiator[key as keyof Agent] as number;
+          emotionUpdates[key] = Math.max(0, Math.min(100, currentValue + value));
+        }
+      });
+      
+      if (Object.keys(emotionUpdates).length > 0) {
+        await updateAgentEmotionalState(event.initiatorAgentId, emotionUpdates);
+      }
+    }
+  }
+
+  // Apply emotional impacts to target if present
+  if (event.targetAgentId && event.emotionalImpact) {
+    const target = await getAgentById(event.targetAgentId);
+    if (target) {
+      const emotionUpdates: Record<string, number> = {};
+      
+      Object.entries(event.emotionalImpact).forEach(([key, value]) => {
+        if (value !== undefined) {
+          const currentValue = target[key as keyof Agent] as number;
+          emotionUpdates[key] = Math.max(0, Math.min(100, currentValue + value));
+        }
+      });
+      
+      if (Object.keys(emotionUpdates).length > 0) {
+        await updateAgentEmotionalState(event.targetAgentId, emotionUpdates);
+      }
+    }
+  }
+
+  // Apply relationship impacts
+  if (event.relationshipImpact && event.targetAgentId) {
+    await recordRelationshipInteraction(
+      event.initiatorAgentId,
+      event.targetAgentId,
+      event.relationshipImpact.strengthChange || 0,
+      event.relationshipImpact.positivityChange || 0
+    );
+  }
+
+  // Record history for affected agents
+  const initiator = await getAgentById(event.initiatorAgentId);
+  if (initiator) {
+    await createAgentHistory({
+      agentId: event.initiatorAgentId,
+      happiness: initiator.happiness,
+      satisfaction: initiator.satisfaction,
+      stress: initiator.stress,
+      loyalty: initiator.loyalty,
+      trust: initiator.trust,
+      eventId: eventId,
+      notes: `Event: ${event.title}`,
+    });
+  }
+}
+
+// ============================================================================
+// EVENT TRIGGERS
+// ============================================================================
+export async function createEventTrigger(
+  trigger: InsertEventTrigger
+): Promise<typeof eventTriggers.$inferSelect | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db.insert(eventTriggers).values(trigger);
+  return await getEventTriggerById(Number(result[0].insertId));
+}
+
+export async function getEventTriggerById(
+  id: number
+): Promise<typeof eventTriggers.$inferSelect | null> {
+  const db = await getDb();
+  if (!db) return null;
+
+  const result = await db
+    .select()
+    .from(eventTriggers)
+    .where(eq(eventTriggers.id, id))
+    .limit(1);
+  return result[0] || null;
+}
+
+export async function getActiveEventTriggers(): Promise<
+  (typeof eventTriggers.$inferSelect)[]
+> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(eventTriggers)
+    .where(eq(eventTriggers.isActive, true))
+    .orderBy(desc(eventTriggers.priority));
+}
+
+// ============================================================================
+// AGENT HISTORIES
+// ============================================================================
+export async function createAgentHistory(
+  history: InsertAgentHistory
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  await db.insert(agentHistories).values(history);
+}
+
+export async function getAgentHistory(
+  agentId: number,
+  limit: number = 50
+): Promise<(typeof agentHistories.$inferSelect)[]> {
+  const db = await getDb();
+  if (!db) return [];
+
+  return await db
+    .select()
+    .from(agentHistories)
+    .where(eq(agentHistories.agentId, agentId))
+    .orderBy(desc(agentHistories.recordedAt))
+    .limit(limit);
+}
+
+// ============================================================================
+// SEED AGENTIC SIMULATION DATA
+// ============================================================================
+export async function seedAgenticSimulationData(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  // Check if data already exists
+  const existingPersonas = await db.select().from(characterPersonas).limit(1);
+  if (existingPersonas.length > 0) return;
+
+  console.log("[Database] Seeding agentic simulation data...");
+
+  // Seed Character Personas
+  const personas = [
+    {
+      code: "ambitious_leader",
+      name: "Ambitious Leader",
+      description: "Driven, goal-oriented, seeks growth and success",
+      ambitionLevel: 90,
+      cautionLevel: 30,
+      socialLevel: 70,
+      analyticalLevel: 60,
+      communicationStyle: "formal" as const,
+      decisionSpeed: "quick" as const,
+    },
+    {
+      code: "cautious_analyst",
+      name: "Cautious Analyst",
+      description: "Careful, data-driven, risk-averse",
+      ambitionLevel: 40,
+      cautionLevel: 85,
+      socialLevel: 40,
+      analyticalLevel: 95,
+      communicationStyle: "formal" as const,
+      decisionSpeed: "deliberate" as const,
+    },
+    {
+      code: "social_connector",
+      name: "Social Connector",
+      description: "People-focused, relationship-builder, collaborative",
+      ambitionLevel: 60,
+      cautionLevel: 50,
+      socialLevel: 95,
+      analyticalLevel: 50,
+      communicationStyle: "casual" as const,
+      decisionSpeed: "moderate" as const,
+    },
+    {
+      code: "aggressive_competitor",
+      name: "Aggressive Competitor",
+      description: "Assertive, competitive, direct approach",
+      ambitionLevel: 85,
+      cautionLevel: 25,
+      socialLevel: 50,
+      analyticalLevel: 55,
+      communicationStyle: "aggressive" as const,
+      decisionSpeed: "impulsive" as const,
+    },
+    {
+      code: "diplomatic_mediator",
+      name: "Diplomatic Mediator",
+      description: "Balanced, conflict-resolver, seeks harmony",
+      ambitionLevel: 55,
+      cautionLevel: 65,
+      socialLevel: 80,
+      analyticalLevel: 70,
+      communicationStyle: "diplomatic" as const,
+      decisionSpeed: "moderate" as const,
+    },
+  ];
+
+  for (const persona of personas) {
+    await db.insert(characterPersonas).values(persona);
+  }
+
+  // Seed Character Traits
+  const traits = [
+    // Professional traits
+    { code: "reliable", name: "Reliable", category: "professional" as const, description: "Consistently delivers on commitments", positiveEffect: true },
+    { code: "innovative", name: "Innovative", category: "professional" as const, description: "Brings creative solutions", positiveEffect: true },
+    { code: "detail_oriented", name: "Detail-Oriented", category: "professional" as const, description: "Pays attention to details", positiveEffect: true },
+    { code: "procrastinator", name: "Procrastinator", category: "professional" as const, description: "Tends to delay tasks", positiveEffect: false },
+    
+    // Social traits
+    { code: "charismatic", name: "Charismatic", category: "social" as const, description: "Naturally attracts others", positiveEffect: true },
+    { code: "empathetic", name: "Empathetic", category: "social" as const, description: "Understands others' feelings", positiveEffect: true },
+    { code: "introverted", name: "Introverted", category: "social" as const, description: "Prefers solitary work", positiveEffect: true },
+    { code: "conflict_averse", name: "Conflict-Averse", category: "social" as const, description: "Avoids confrontation", positiveEffect: false },
+    
+    // Cognitive traits
+    { code: "strategic_thinker", name: "Strategic Thinker", category: "cognitive" as const, description: "Sees the big picture", positiveEffect: true },
+    { code: "analytical", name: "Analytical", category: "cognitive" as const, description: "Strong logical reasoning", positiveEffect: true },
+    { code: "creative", name: "Creative", category: "cognitive" as const, description: "Generates novel ideas", positiveEffect: true },
+    { code: "impulsive", name: "Impulsive", category: "cognitive" as const, description: "Acts without planning", positiveEffect: false },
+    
+    // Emotional traits
+    { code: "optimistic", name: "Optimistic", category: "emotional" as const, description: "Maintains positive outlook", positiveEffect: true },
+    { code: "resilient", name: "Resilient", category: "emotional" as const, description: "Bounces back from setbacks", positiveEffect: true },
+    { code: "anxious", name: "Anxious", category: "emotional" as const, description: "Prone to worry", positiveEffect: false },
+    { code: "hot_tempered", name: "Hot-Tempered", category: "emotional" as const, description: "Quick to anger", positiveEffect: false },
+  ];
+
+  for (const trait of traits) {
+    await db.insert(characterTraits).values(trait);
+  }
+
+  console.log("[Database] Agentic simulation data seeded successfully");
 }
