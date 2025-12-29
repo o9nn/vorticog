@@ -456,6 +456,41 @@ export type Agent = typeof agents.$inferSelect;
 export type InsertAgent = typeof agents.$inferInsert;
 
 // ============================================================================
+// AGENT BIG FIVE PERSONALITY - Extended personality model (DreamCog integration)
+// ============================================================================
+export const agentBigFivePersonality = mysqlTable("agent_big_five_personality", {
+  id: int("id").autoincrement().primaryKey(),
+  agentId: int("agentId").notNull().unique(),
+  
+  // Big Five personality traits (0-100 scale)
+  openness: int("openness").default(50).notNull(), // Creativity, curiosity, openness to experience
+  conscientiousness: int("conscientiousness").default(50).notNull(), // Organization, dependability
+  extraversion: int("extraversion").default(50).notNull(), // Sociability, assertiveness
+  agreeableness: int("agreeableness").default(50).notNull(), // Compassion, cooperation
+  neuroticism: int("neuroticism").default(50).notNull(), // Emotional stability
+  
+  // Communication style attributes
+  formalityLevel: int("formalityLevel").default(50).notNull(), // 0=casual, 100=formal
+  verbosityLevel: int("verbosityLevel").default(50).notNull(), // 0=concise, 100=verbose
+  emotionalExpression: int("emotionalExpression").default(50).notNull(), // 0=reserved, 100=expressive
+  humorLevel: int("humorLevel").default(50).notNull(),
+  directnessLevel: int("directnessLevel").default(50).notNull(),
+  
+  // Behavioral tendencies (0-100 scale)
+  impulsiveness: int("impulsiveness").default(50).notNull(),
+  riskTaking: int("riskTaking").default(50).notNull(),
+  empathy: int("empathy").default(50).notNull(),
+  leadership: int("leadership").default(50).notNull(),
+  independence: int("independence").default(50).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AgentBigFivePersonality = typeof agentBigFivePersonality.$inferSelect;
+export type InsertAgentBigFivePersonality = typeof agentBigFivePersonality.$inferInsert;
+
+// ============================================================================
 // AGENT TRAITS - Many-to-many relationship between agents and traits
 // ============================================================================
 export const agentTraits = mysqlTable("agent_traits", {
@@ -745,6 +780,281 @@ export type AgentHistory = typeof agentHistories.$inferSelect;
 export type InsertAgentHistory = typeof agentHistories.$inferInsert;
 
 // ============================================================================
+// AGENT MOTIVATIONS - Goal tracking for agents (DreamCog integration)
+// ============================================================================
+export const agentMotivations = mysqlTable("agent_motivations", {
+  id: int("id").autoincrement().primaryKey(),
+  agentId: int("agentId").notNull(),
+  
+  motivationType: mysqlEnum("motivationType", [
+    "short_term",
+    "long_term",
+    "core_value",
+  ]).notNull(),
+  description: text("description").notNull(),
+  
+  priority: int("priority").default(5).notNull(), // 1-10 scale
+  progress: int("progress").default(0).notNull(), // 0-100%
+  isActive: boolean("isActive").default(true).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AgentMotivation = typeof agentMotivations.$inferSelect;
+export type InsertAgentMotivation = typeof agentMotivations.$inferInsert;
+
+// ============================================================================
+// AGENT MEMORIES - Experience tracking for agents (DreamCog integration)
+// ============================================================================
+export const agentMemories = mysqlTable("agent_memories", {
+  id: int("id").autoincrement().primaryKey(),
+  agentId: int("agentId").notNull(),
+  
+  memoryType: mysqlEnum("memoryType", [
+    "event",
+    "interaction",
+    "knowledge",
+    "emotion",
+    "skill",
+    "trauma",
+    "achievement",
+  ]).notNull(),
+  content: text("content").notNull(),
+  
+  emotionalImpact: int("emotionalImpact").default(0).notNull(), // -100 to +100
+  importance: int("importance").default(5).notNull(), // 1-10 scale
+  
+  // References
+  eventId: int("eventId"), // Related agent event
+  relatedAgentId: int("relatedAgentId"), // Other agent involved
+  locationId: int("locationId"), // Location where it happened
+  
+  memoryDate: timestamp("memoryDate").notNull(),
+  isRepressed: boolean("isRepressed").default(false).notNull(),
+  lastRecalled: timestamp("lastRecalled"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AgentMemory = typeof agentMemories.$inferSelect;
+export type InsertAgentMemory = typeof agentMemories.$inferInsert;
+
+// ============================================================================
+// RELATIONSHIP EVENTS - History tracking for relationships (DreamCog integration)
+// ============================================================================
+export const relationshipEvents = mysqlTable("relationship_events", {
+  id: int("id").autoincrement().primaryKey(),
+  relationshipId: int("relationshipId").notNull(),
+  
+  eventType: mysqlEnum("eventType", [
+    "first_meeting",
+    "conflict",
+    "bonding",
+    "betrayal",
+    "reconciliation",
+    "milestone",
+    "other",
+  ]).notNull(),
+  description: text("description").notNull(),
+  
+  // Impact on relationship dynamics (-100 to +100)
+  impactOnTrust: int("impactOnTrust").default(0).notNull(),
+  impactOnAffection: int("impactOnAffection").default(0).notNull(),
+  impactOnRespect: int("impactOnRespect").default(0).notNull(),
+  
+  eventDate: timestamp("eventDate").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type RelationshipEvent = typeof relationshipEvents.$inferSelect;
+export type InsertRelationshipEvent = typeof relationshipEvents.$inferInsert;
+
+// ============================================================================
+// WORLDS - World building system for narrative context (DreamCog integration)
+// ============================================================================
+export const worlds = mysqlTable("worlds", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  
+  name: varchar("name", { length: 128 }).notNull(),
+  description: text("description"),
+  
+  genre: varchar("genre", { length: 64 }),
+  timePeriod: varchar("timePeriod", { length: 64 }),
+  technologyLevel: varchar("technologyLevel", { length: 64 }),
+  magicSystem: text("magicSystem"),
+  culturalNotes: text("culturalNotes"),
+  
+  rules: json("rules").$type<{
+    physicsRules?: string[];
+    socialRules?: string[];
+    magicRules?: string[];
+  }>(),
+  
+  isPublic: boolean("isPublic").default(false).notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type World = typeof worlds.$inferSelect;
+export type InsertWorld = typeof worlds.$inferInsert;
+
+// ============================================================================
+// LOCATIONS - Hierarchical place system (DreamCog integration)
+// ============================================================================
+export const locations = mysqlTable("locations", {
+  id: int("id").autoincrement().primaryKey(),
+  worldId: int("worldId").notNull(),
+  
+  name: varchar("name", { length: 128 }).notNull(),
+  locationType: mysqlEnum("locationType", [
+    "city",
+    "building",
+    "wilderness",
+    "dungeon",
+    "realm",
+    "dimension",
+    "other",
+  ]).notNull(),
+  description: text("description"),
+  
+  parentLocationId: int("parentLocationId"), // For nested locations
+  
+  attributes: json("attributes").$type<{
+    climate?: string;
+    population?: string;
+    dangerLevel?: number;
+    resources?: string[];
+    notableFeatures?: string[];
+  }>(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Location = typeof locations.$inferSelect;
+export type InsertLocation = typeof locations.$inferInsert;
+
+// ============================================================================
+// LORE ENTRIES - Knowledge database for worlds (DreamCog integration)
+// ============================================================================
+export const loreEntries = mysqlTable("lore_entries", {
+  id: int("id").autoincrement().primaryKey(),
+  worldId: int("worldId").notNull(),
+  
+  category: mysqlEnum("category", [
+    "history",
+    "legend",
+    "culture",
+    "religion",
+    "politics",
+    "science",
+    "magic",
+    "species",
+    "language",
+    "artifact",
+    "other",
+  ]).notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  content: text("content").notNull(),
+  
+  isPublic: boolean("isPublic").default(true).notNull(),
+  isSecret: boolean("isSecret").default(false).notNull(),
+  
+  relatedLocationId: int("relatedLocationId"),
+  relatedAgentId: int("relatedAgentId"),
+  
+  tags: json("tags").$type<string[]>(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LoreEntry = typeof loreEntries.$inferSelect;
+export type InsertLoreEntry = typeof loreEntries.$inferInsert;
+
+// ============================================================================
+// WORLD EVENTS - Historical timeline for worlds (DreamCog integration)
+// ============================================================================
+export const worldEvents = mysqlTable("world_events", {
+  id: int("id").autoincrement().primaryKey(),
+  worldId: int("worldId").notNull(),
+  
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description"),
+  
+  eventType: mysqlEnum("eventType", [
+    "battle",
+    "discovery",
+    "political",
+    "natural",
+    "magical",
+    "social",
+    "economic",
+    "other",
+  ]).notNull(),
+  
+  importance: int("importance").default(5).notNull(), // 1-10 scale
+  eventDate: varchar("eventDate", { length: 128 }).notNull(), // Flexible format for fictional calendars
+  duration: varchar("duration", { length: 64 }),
+  
+  locationId: int("locationId"),
+  involvedAgentIds: json("involvedAgentIds").$type<number[]>(),
+  involvedGroupIds: json("involvedGroupIds").$type<number[]>(),
+  
+  consequences: text("consequences"),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WorldEvent = typeof worldEvents.$inferSelect;
+export type InsertWorldEvent = typeof worldEvents.$inferInsert;
+
+// ============================================================================
+// SCHEDULED WORLD EVENTS - Future events with triggers (DreamCog integration)
+// ============================================================================
+export const scheduledWorldEvents = mysqlTable("scheduled_world_events", {
+  id: int("id").autoincrement().primaryKey(),
+  worldId: int("worldId").notNull(),
+  
+  eventName: varchar("eventName", { length: 256 }).notNull(),
+  description: text("description"),
+  
+  scheduledFor: timestamp("scheduledFor").notNull(),
+  eventTrigger: json("eventTrigger").$type<{
+    triggerType: "time" | "condition" | "manual";
+    conditions?: Array<{
+      type: string;
+      metric: string;
+      operator: string;
+      value: number | string;
+    }>;
+  }>(),
+  
+  targetAgentIds: json("targetAgentIds").$type<number[]>(),
+  targetLocationId: int("targetLocationId"),
+  
+  priority: int("priority").default(5).notNull(), // 1-10 scale
+  isRecurring: boolean("isRecurring").default(false).notNull(),
+  
+  status: mysqlEnum("status", [
+    "pending",
+    "active",
+    "completed",
+    "cancelled",
+  ]).default("pending").notNull(),
+  
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ScheduledWorldEvent = typeof scheduledWorldEvents.$inferSelect;
+export type InsertScheduledWorldEvent = typeof scheduledWorldEvents.$inferInsert;
+
+// ============================================================================
 // AGENTIC SIMULATION RELATIONS
 // ============================================================================
 export const agentsRelations = relations(agents, ({ one, many }) => ({
@@ -772,6 +1082,9 @@ export const agentsRelations = relations(agents, ({ one, many }) => ({
   initiatedEvents: many(agentEvents, { relationName: "initiator" }),
   targetedEvents: many(agentEvents, { relationName: "target" }),
   histories: many(agentHistories),
+  bigFivePersonality: one(agentBigFivePersonality),
+  motivations: many(agentMotivations),
+  memories: many(agentMemories),
 }));
 
 export const agentTraitsRelations = relations(agentTraits, ({ one }) => ({
@@ -785,7 +1098,7 @@ export const agentTraitsRelations = relations(agentTraits, ({ one }) => ({
   }),
 }));
 
-export const relationshipsRelations = relations(relationships, ({ one }) => ({
+export const relationshipsRelations = relations(relationships, ({ one, many }) => ({
   agent1: one(agents, {
     fields: [relationships.agent1Id],
     references: [agents.id],
@@ -796,6 +1109,7 @@ export const relationshipsRelations = relations(relationships, ({ one }) => ({
     references: [agents.id],
     relationName: "agent2",
   }),
+  events: many(relationshipEvents),
 }));
 
 export const agentGroupsRelations = relations(agentGroups, ({ one, many }) => ({
@@ -874,5 +1188,113 @@ export const agentHistoriesRelations = relations(agentHistories, ({ one }) => ({
   relationship: one(relationships, {
     fields: [agentHistories.relationshipId],
     references: [relationships.id],
+  }),
+}));
+
+// ============================================================================
+// DREAMCOG INTEGRATION RELATIONS
+// ============================================================================
+
+export const agentBigFivePersonalityRelations = relations(agentBigFivePersonality, ({ one }) => ({
+  agent: one(agents, {
+    fields: [agentBigFivePersonality.agentId],
+    references: [agents.id],
+  }),
+}));
+
+export const agentMotivationsRelations = relations(agentMotivations, ({ one }) => ({
+  agent: one(agents, {
+    fields: [agentMotivations.agentId],
+    references: [agents.id],
+  }),
+}));
+
+export const agentMemoriesRelations = relations(agentMemories, ({ one }) => ({
+  agent: one(agents, {
+    fields: [agentMemories.agentId],
+    references: [agents.id],
+  }),
+  event: one(agentEvents, {
+    fields: [agentMemories.eventId],
+    references: [agentEvents.id],
+  }),
+  relatedAgent: one(agents, {
+    fields: [agentMemories.relatedAgentId],
+    references: [agents.id],
+  }),
+  location: one(locations, {
+    fields: [agentMemories.locationId],
+    references: [locations.id],
+  }),
+}));
+
+export const relationshipEventsRelations = relations(relationshipEvents, ({ one }) => ({
+  relationship: one(relationships, {
+    fields: [relationshipEvents.relationshipId],
+    references: [relationships.id],
+  }),
+}));
+
+export const worldsRelations = relations(worlds, ({ one, many }) => ({
+  user: one(users, {
+    fields: [worlds.userId],
+    references: [users.id],
+  }),
+  locations: many(locations),
+  loreEntries: many(loreEntries),
+  worldEvents: many(worldEvents),
+  scheduledEvents: many(scheduledWorldEvents),
+}));
+
+export const locationsRelations = relations(locations, ({ one, many }) => ({
+  world: one(worlds, {
+    fields: [locations.worldId],
+    references: [worlds.id],
+  }),
+  parentLocation: one(locations, {
+    fields: [locations.parentLocationId],
+    references: [locations.id],
+    relationName: "parent",
+  }),
+  subLocations: many(locations, { relationName: "parent" }),
+  loreEntries: many(loreEntries),
+  worldEvents: many(worldEvents),
+  agentMemories: many(agentMemories),
+}));
+
+export const loreEntriesRelations = relations(loreEntries, ({ one }) => ({
+  world: one(worlds, {
+    fields: [loreEntries.worldId],
+    references: [worlds.id],
+  }),
+  relatedLocation: one(locations, {
+    fields: [loreEntries.relatedLocationId],
+    references: [locations.id],
+  }),
+  relatedAgent: one(agents, {
+    fields: [loreEntries.relatedAgentId],
+    references: [agents.id],
+  }),
+}));
+
+export const worldEventsRelations = relations(worldEvents, ({ one }) => ({
+  world: one(worlds, {
+    fields: [worldEvents.worldId],
+    references: [worlds.id],
+  }),
+  location: one(locations, {
+    fields: [worldEvents.locationId],
+    references: [locations.id],
+  }),
+}));
+
+export const scheduledWorldEventsRelations = relations(scheduledWorldEvents, ({ one }) => ({
+  world: one(worlds, {
+    fields: [scheduledWorldEvents.worldId],
+    references: [worlds.id],
+  }),
+  targetLocation: one(locations, {
+    fields: [scheduledWorldEvents.targetLocationId],
+    references: [locations.id],
   }),
 }));
