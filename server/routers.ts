@@ -1285,8 +1285,11 @@ export const appRouter = router({
       )
       .mutation(async ({ ctx, input }) => {
         const world = await getWorldById(input.id);
-        if (!world || world.userId !== ctx.user.id) {
-          throw new Error("Not authorized");
+        if (!world) {
+          throw new Error("World not found");
+        }
+        if (world.userId !== ctx.user.id) {
+          throw new Error("Not authorized to update this world");
         }
         await updateWorld(input.id, input.updates);
         return { success: true };
@@ -1465,9 +1468,9 @@ export const appRouter = router({
               conditions: z
                 .array(
                   z.object({
-                    type: z.string(),
+                    type: z.enum(["threshold", "time", "relationship", "emotion"]),
                     metric: z.string(),
-                    operator: z.string(),
+                    operator: z.enum([">", "<", "==", "!=", "between"]),
                     value: z.union([z.number(), z.string()]),
                   })
                 )

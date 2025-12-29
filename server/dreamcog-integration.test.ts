@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { appRouter } from "./routers";
 
+// Test constants
+const TEST_USER_ID = 1;
+const TEST_AGENT_ID = 1;
+const TEST_WORLD_ID = 1;
+const TEST_RELATIONSHIP_ID = 1;
+
 // Mock the database functions
 vi.mock("./db", () => ({
   initializeGameData: vi.fn().mockResolvedValue(undefined),
@@ -97,7 +103,7 @@ describe("DreamCog Integration - Big Five Personality", () => {
   it("should create Big Five personality profile", async () => {
     const mockPersonality = {
       id: 1,
-      agentId: 1,
+      agentId: TEST_AGENT_ID,
       openness: 80,
       conscientiousness: 70,
       extraversion: 60,
@@ -121,7 +127,7 @@ describe("DreamCog Integration - Big Five Personality", () => {
 
     const caller = appRouter.createCaller(createMockContext());
     const result = await caller.personality.create({
-      agentId: 1,
+      agentId: TEST_AGENT_ID,
       openness: 80,
       conscientiousness: 70,
       extraversion: 60,
@@ -132,7 +138,7 @@ describe("DreamCog Integration - Big Five Personality", () => {
     });
 
     expect(db.createAgentBigFivePersonality).toHaveBeenCalledWith({
-      agentId: 1,
+      agentId: TEST_AGENT_ID,
       openness: 80,
       conscientiousness: 70,
       extraversion: 60,
@@ -147,7 +153,7 @@ describe("DreamCog Integration - Big Five Personality", () => {
   it("should get Big Five personality profile", async () => {
     const mockPersonality = {
       id: 1,
-      agentId: 1,
+      agentId: TEST_AGENT_ID,
       openness: 80,
       conscientiousness: 70,
       extraversion: 60,
@@ -170,7 +176,7 @@ describe("DreamCog Integration - Big Five Personality", () => {
     vi.mocked(db.getAgentBigFivePersonality).mockResolvedValue(mockPersonality);
 
     const caller = appRouter.createCaller(createMockContext());
-    const result = await caller.personality.get({ agentId: 1 });
+    const result = await caller.personality.get({ agentId: TEST_AGENT_ID });
 
     expect(db.getAgentBigFivePersonality).toHaveBeenCalledWith(1);
     expect(result).toEqual(mockPersonality);
@@ -181,7 +187,7 @@ describe("DreamCog Integration - Big Five Personality", () => {
 
     const caller = appRouter.createCaller(createMockContext());
     const result = await caller.personality.update({
-      agentId: 1,
+      agentId: TEST_AGENT_ID,
       updates: {
         openness: 85,
         leadership: 75,
@@ -204,7 +210,7 @@ describe("DreamCog Integration - Agent Motivations", () => {
   it("should create agent motivation", async () => {
     const mockMotivation = {
       id: 1,
-      agentId: 1,
+      agentId: TEST_AGENT_ID,
       motivationType: "long_term" as const,
       description: "Become the CEO",
       priority: 10,
@@ -218,7 +224,7 @@ describe("DreamCog Integration - Agent Motivations", () => {
 
     const caller = appRouter.createCaller(createMockContext());
     const result = await caller.motivation.create({
-      agentId: 1,
+      agentId: TEST_AGENT_ID,
       motivationType: "long_term",
       description: "Become the CEO",
       priority: 10,
@@ -232,7 +238,7 @@ describe("DreamCog Integration - Agent Motivations", () => {
     const mockMotivations = [
       {
         id: 1,
-        agentId: 1,
+        agentId: TEST_AGENT_ID,
         motivationType: "long_term" as const,
         description: "Become the CEO",
         priority: 10,
@@ -247,11 +253,11 @@ describe("DreamCog Integration - Agent Motivations", () => {
 
     const caller = appRouter.createCaller(createMockContext());
     const result = await caller.motivation.byAgent({
-      agentId: 1,
+      agentId: TEST_AGENT_ID,
       activeOnly: true,
     });
 
-    expect(db.getAgentMotivations).toHaveBeenCalledWith(1, true);
+    expect(db.getAgentMotivations).toHaveBeenCalledWith(TEST_AGENT_ID, true);
     expect(result).toEqual(mockMotivations);
   });
 
@@ -281,7 +287,7 @@ describe("DreamCog Integration - Agent Memories", () => {
   it("should create agent memory", async () => {
     const mockMemory = {
       id: 1,
-      agentId: 1,
+      agentId: TEST_AGENT_ID,
       memoryType: "achievement" as const,
       content: "Successfully led the team through Q3 launch",
       emotionalImpact: 75,
@@ -299,7 +305,7 @@ describe("DreamCog Integration - Agent Memories", () => {
 
     const caller = appRouter.createCaller(createMockContext());
     const result = await caller.memory.create({
-      agentId: 1,
+      agentId: TEST_AGENT_ID,
       memoryType: "achievement",
       content: "Successfully led the team through Q3 launch",
       emotionalImpact: 75,
@@ -315,7 +321,7 @@ describe("DreamCog Integration - Agent Memories", () => {
     const mockMemories = [
       {
         id: 1,
-        agentId: 1,
+        agentId: TEST_AGENT_ID,
         memoryType: "achievement" as const,
         content: "Successfully led the team",
         emotionalImpact: 75,
@@ -334,11 +340,11 @@ describe("DreamCog Integration - Agent Memories", () => {
 
     const caller = appRouter.createCaller(createMockContext());
     const result = await caller.memory.byAgent({
-      agentId: 1,
+      agentId: TEST_AGENT_ID,
       limit: 50,
     });
 
-    expect(db.getAgentMemories).toHaveBeenCalledWith(1, 50);
+    expect(db.getAgentMemories).toHaveBeenCalledWith(TEST_AGENT_ID, 50);
     expect(result).toEqual(mockMemories);
   });
 });
@@ -351,7 +357,7 @@ describe("DreamCog Integration - Worlds", () => {
   it("should create world", async () => {
     const mockWorld = {
       id: 1,
-      userId: 1,
+      userId: TEST_USER_ID,
       name: "Technotopia",
       description: "A cyberpunk world",
       genre: "cyberpunk",
@@ -377,7 +383,7 @@ describe("DreamCog Integration - Worlds", () => {
     });
 
     expect(db.createWorld).toHaveBeenCalledWith({
-      userId: 1,
+      userId: TEST_USER_ID,
       name: "Technotopia",
       description: "A cyberpunk world",
       genre: "cyberpunk",
@@ -391,7 +397,7 @@ describe("DreamCog Integration - Worlds", () => {
     const mockWorlds = [
       {
         id: 1,
-        userId: 1,
+        userId: TEST_USER_ID,
         name: "Technotopia",
         description: "A cyberpunk world",
         genre: "cyberpunk",
@@ -418,7 +424,7 @@ describe("DreamCog Integration - Worlds", () => {
   it("should update world with authorization", async () => {
     const mockWorld = {
       id: 1,
-      userId: 1,
+      userId: TEST_USER_ID,
       name: "Technotopia",
       description: "Updated description",
       genre: "cyberpunk",
@@ -487,7 +493,7 @@ describe("DreamCog Integration - Locations", () => {
   it("should create location", async () => {
     const mockLocation = {
       id: 1,
-      worldId: 1,
+      worldId: TEST_WORLD_ID,
       name: "Neo-Singapore",
       locationType: "city" as const,
       description: "A sprawling megacity",
@@ -505,7 +511,7 @@ describe("DreamCog Integration - Locations", () => {
 
     const caller = appRouter.createCaller(createMockContext());
     const result = await caller.location.create({
-      worldId: 1,
+      worldId: TEST_WORLD_ID,
       name: "Neo-Singapore",
       locationType: "city",
       description: "A sprawling megacity",
@@ -524,7 +530,7 @@ describe("DreamCog Integration - Locations", () => {
     const mockLocations = [
       {
         id: 1,
-        worldId: 1,
+        worldId: TEST_WORLD_ID,
         name: "Neo-Singapore",
         locationType: "city" as const,
         description: "A sprawling megacity",
@@ -538,7 +544,7 @@ describe("DreamCog Integration - Locations", () => {
     vi.mocked(db.getLocationsByWorldId).mockResolvedValue(mockLocations);
 
     const caller = appRouter.createCaller(createMockContext());
-    const result = await caller.location.byWorld({ worldId: 1 });
+    const result = await caller.location.byWorld({ worldId: TEST_WORLD_ID });
 
     expect(db.getLocationsByWorldId).toHaveBeenCalledWith(1);
     expect(result).toEqual(mockLocations);
@@ -548,7 +554,7 @@ describe("DreamCog Integration - Locations", () => {
     const mockSubLocations = [
       {
         id: 2,
-        worldId: 1,
+        worldId: TEST_WORLD_ID,
         name: "Tech District",
         locationType: "building" as const,
         description: "High-tech buildings",
@@ -577,7 +583,7 @@ describe("DreamCog Integration - Lore Entries", () => {
   it("should create lore entry", async () => {
     const mockLore = {
       id: 1,
-      worldId: 1,
+      worldId: TEST_WORLD_ID,
       category: "history" as const,
       title: "The Digital Awakening",
       content: "In 2085, the first AI awakened...",
@@ -594,7 +600,7 @@ describe("DreamCog Integration - Lore Entries", () => {
 
     const caller = appRouter.createCaller(createMockContext());
     const result = await caller.lore.create({
-      worldId: 1,
+      worldId: TEST_WORLD_ID,
       category: "history",
       title: "The Digital Awakening",
       content: "In 2085, the first AI awakened...",
@@ -610,7 +616,7 @@ describe("DreamCog Integration - Lore Entries", () => {
     const mockLoreEntries = [
       {
         id: 1,
-        worldId: 1,
+        worldId: TEST_WORLD_ID,
         category: "history" as const,
         title: "The Digital Awakening",
         content: "In 2085...",
@@ -628,7 +634,7 @@ describe("DreamCog Integration - Lore Entries", () => {
 
     const caller = appRouter.createCaller(createMockContext());
     const result = await caller.lore.byWorld({
-      worldId: 1,
+      worldId: TEST_WORLD_ID,
       category: "history",
     });
 
@@ -645,7 +651,7 @@ describe("DreamCog Integration - World Events", () => {
   it("should create world event", async () => {
     const mockEvent = {
       id: 1,
-      worldId: 1,
+      worldId: TEST_WORLD_ID,
       title: "The Corporate Wars",
       description: "Three megacorps battled for control",
       eventType: "battle" as const,
@@ -664,7 +670,7 @@ describe("DreamCog Integration - World Events", () => {
 
     const caller = appRouter.createCaller(createMockContext());
     const result = await caller.worldEvent.create({
-      worldId: 1,
+      worldId: TEST_WORLD_ID,
       title: "The Corporate Wars",
       description: "Three megacorps battled for control",
       eventType: "battle",
@@ -682,7 +688,7 @@ describe("DreamCog Integration - World Events", () => {
     const mockEvents = [
       {
         id: 1,
-        worldId: 1,
+        worldId: TEST_WORLD_ID,
         title: "The Corporate Wars",
         description: "Three megacorps battled",
         eventType: "battle" as const,
@@ -701,7 +707,7 @@ describe("DreamCog Integration - World Events", () => {
     vi.mocked(db.getWorldEventsByWorldId).mockResolvedValue(mockEvents);
 
     const caller = appRouter.createCaller(createMockContext());
-    const result = await caller.worldEvent.byWorld({ worldId: 1 });
+    const result = await caller.worldEvent.byWorld({ worldId: TEST_WORLD_ID });
 
     expect(db.getWorldEventsByWorldId).toHaveBeenCalledWith(1);
     expect(result).toEqual(mockEvents);
@@ -717,7 +723,7 @@ describe("DreamCog Integration - Scheduled World Events", () => {
     const scheduledFor = new Date("2025-04-01");
     const mockEvent = {
       id: 1,
-      worldId: 1,
+      worldId: TEST_WORLD_ID,
       eventName: "Quarterly Business Review",
       description: "Company-wide performance evaluation",
       scheduledFor,
@@ -737,7 +743,7 @@ describe("DreamCog Integration - Scheduled World Events", () => {
 
     const caller = appRouter.createCaller(createMockContext());
     const result = await caller.scheduledWorldEvent.create({
-      worldId: 1,
+      worldId: TEST_WORLD_ID,
       eventName: "Quarterly Business Review",
       description: "Company-wide performance evaluation",
       scheduledFor,
@@ -757,7 +763,7 @@ describe("DreamCog Integration - Scheduled World Events", () => {
     const mockEvents = [
       {
         id: 1,
-        worldId: 1,
+        worldId: TEST_WORLD_ID,
         eventName: "Quarterly Review",
         description: "Performance evaluation",
         scheduledFor: new Date("2025-04-01"),
@@ -775,7 +781,7 @@ describe("DreamCog Integration - Scheduled World Events", () => {
     vi.mocked(db.getPendingScheduledWorldEvents).mockResolvedValue(mockEvents);
 
     const caller = appRouter.createCaller(createMockContext());
-    const result = await caller.scheduledWorldEvent.pending({ worldId: 1 });
+    const result = await caller.scheduledWorldEvent.pending({ worldId: TEST_WORLD_ID });
 
     expect(db.getPendingScheduledWorldEvents).toHaveBeenCalledWith(1);
     expect(result).toEqual(mockEvents);
